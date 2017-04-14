@@ -126,7 +126,7 @@ objects:
     source:
       contextDir: /voting-app
       git:
-        uri: https://github.com/vpavlin/vote-app-demo
+        uri: https://github.com/containers-prague/demo-voting-app/
       type: Git
     strategy:
       sourceStrategy:
