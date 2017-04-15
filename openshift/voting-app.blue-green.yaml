@@ -1,0 +1,381 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: vote-app-voting
+objects:
+#Main Route
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+      openshift.io/host.generated: "true"
+    creationTimestamp: null
+    labels:
+      app: voting-app-bg
+    name: voting-app
+  spec:
+    alternateBackends:
+    - kind: Service
+      name: voting-app-green
+      weight: 0
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: voting-app-blue
+      weight: 100
+    wildcardPolicy: None
+  status: {}
+#Route Green
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+      openshift.io/host.generated: "true"
+    creationTimestamp: null
+    labels:
+      app: voting-app-bg
+    name: green-voting-app
+  spec:
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: voting-app-green
+      weight: 100
+    wildcardPolicy: None
+  status: {}
+#Route blue
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+      openshift.io/host.generated: "true"
+    creationTimestamp: null
+    labels:
+      app: voting-app-bg
+    name: blue-voting-app
+  spec:
+    port:
+      targetPort: 8080-tcp
+    to:
+      kind: Service
+      name: voting-app-blue
+      weight: 100
+    wildcardPolicy: None
+  status: {}
+#Service Green
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: voting-app-bg
+    name: voting-app-green
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: voting-app-green
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+#Service Blue
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: voting-app-bg
+    name: voting-app-blue
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: voting-app-blue
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+#DeploymentConfig Green
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: voting-app-bg
+    name: voting-app-green
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: voting-app-green
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: voting-app-bg
+          deploymentconfig: voting-app-green
+      spec:
+        containers:
+        - image: ""
+          imagePullPolicy: Always
+          name: voting-app-green
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "redis"
+                  key: database-password
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - voting-app-green
+        from:
+          kind: ImageStreamTag
+          name: voting-app:green
+      type: ImageChange
+    - type: ConfigChange
+  status: {}
+#DeploymentConfig Blue
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: voting-app-bg
+    name: voting-app-blue
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: voting-app-blue
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: voting-app-bg
+          deploymentconfig: voting-app-blue
+      spec:
+        containers:
+        - image: ""
+          imagePullPolicy: Always
+          name: voting-app-blue
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: "redis"
+                  key: database-password
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - voting-app-blue
+        from:
+          kind: ImageStreamTag
+          name: voting-app:blue
+      type: ImageChange
+    - type: ConfigChange
+  status: {}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: voting-app
+    name: voting-app
+  spec:
+    nodeSelector: null
+    output:
+      to:
+        kind: ImageStreamTag
+        name: voting-app:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      contextDir: /voting-app
+      git:
+        uri: https://github.com/containers-prague/demo-voting-app/
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: python-27-centos7:latest
+      type: Source
+    triggers:
+    - github:
+        secret: Z1YyzwLOc2KgIMxswo69
+      type: GitHub
+    - generic:
+        secret: In4tCFXzyFGU_Sy6Q9EO
+      type: Generic
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    generation: 1
+    labels:
+      app: voting-app
+    name: voting-app
+  spec:
+    tags:
+    - annotations: null
+      from:
+        kind: DockerImage
+        name: voting-app:latest
+      generation: null
+      importPolicy: {}
+      name: latest
+  status:
+    dockerImageRepository: ""
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+      openshift.io/image.dockerRepositoryCheck: 2017-04-10T11:50:12Z
+    creationTimestamp: null
+    generation: 2
+    labels:
+      app: voting-app
+    name: python-27-centos7
+  spec:
+    tags:
+    - annotations:
+        openshift.io/imported-from: centos/python-27-centos7
+      from:
+        kind: DockerImage
+        name: centos/python-27-centos7:latest
+      generation: 2
+      importPolicy: {}
+      name: latest
+  status:
+    dockerImageRepository: ""
+
+
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    annotations:
+      pipeline.alpha.openshift.io/uses: '[{"name": "${NAME}", "namespace": "", "kind": "DeploymentConfig"}]'
+    creationTimestamp: null
+    labels:
+      name: bluegreen-pipeline
+    name: bluegreen-pipeline
+  spec:
+    strategy:
+      jenkinsPipelineStrategy:
+        jenkinsfile: |-
+          def appName="voting-app"
+          def project=""
+          def tag="blue"
+          def altTag="green"
+          def verbose="true"
+          node {
+            project = env.PROJECT_NAME
+            stage("Initialize") {
+              sh "oc get route ${appName} -n ${project} -o jsonpath='{ .spec.to.name }' --loglevel=4 > activeservice"
+              activeService = readFile('activeservice').trim()
+              if (activeService == "${appName}-blue") {
+                tag = "green"
+                altTag = "blue"
+              }
+              sh "oc get route ${tag}-${appName} -n ${project} -o jsonpath='{ .spec.host }' --loglevel=4 > routehost"
+              routeHost = readFile('routehost').trim()
+            }
+            stage("Build") {
+              echo "building tag ${tag}"
+              openshiftBuild buildConfig: appName, showBuildLogs: "true", verbose: verbose
+            }
+
+            stage("Deploy Test") {
+              openshiftTag srcStream: appName, srcTag: 'latest', destinationStream: appName, destinationTag: tag, verbose: verbose
+              openshiftVerifyDeployment deploymentConfig: "${appName}-${tag}", verbose: verbose
+            }
+
+            stage("Test") {
+              input message: "Test deployment: http://${routeHost}. Approve?", id: "approval"
+            }
+
+            stage("Go Live") {
+              sh "oc set -n ${project} route-backends ${appName} ${appName}-${tag}=100 ${appName}-${altTag}=0 --loglevel=4"
+            }
+          }
+      type: JenkinsPipeline
+    triggers:
+    - github:
+        secret: "demo-pipeline"
+      type: GitHub
+    - generic:
+        secret: "demo-pipeline"
+      type: Generic
