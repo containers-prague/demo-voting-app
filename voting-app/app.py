@@ -8,8 +8,8 @@ import socket
 import random
 import json
 
-option_a = os.getenv('OPTION_A', "Docker Swarm")
-option_b = os.getenv('OPTION_B', "Openshift")
+option_a = os.getenv('OPTION_A', "Ano")
+option_b = os.getenv('OPTION_B', "Ne")
 
 hostname = socket.gethostname()
 
